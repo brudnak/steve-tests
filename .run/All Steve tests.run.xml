@@ -1,0 +1,19 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All Steve tests" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="steve-tests" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-count=1 -p=4 -parallel=4 -timeout=20m" />
+    <envs>
+      <env name="STEVE_CONFIG" value="$USER_HOME$/steve-config.yaml" />
+      <env name="STEVE_TEST_ALLOW_MUTATIONS" value="true" />
+      <env name="STEVE_TEST_ALLOW_WORKLOADS" value="true" />
+      <env name="STEVE_TEST_ALLOW_CRDS" value="true" />
+    </envs>
+    <kind value="DIRECTORY" />
+    <package value="github.com/rancher/steve-tests" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>
