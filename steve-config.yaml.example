@@ -1,0 +1,16 @@
+# Non-secret connection settings for steve-tests.
+# Environment variables override these values. Keep bearer tokens in
+# STEVE_TOKEN instead of adding them to this file.
+
+url: "https://steve.example.test"
+
+# Prefer a trusted CA bundle for shared QA endpoints.
+# caFile: "/path/to/qa-ca.pem"
+
+# Set true for a local self-signed endpoint. Do not combine with caFile.
+insecure: false
+
+requestTimeout: "30s"
+waitTimeout: "2m"
+pollInterval: "200ms"
+verbose: false
