@@ -1,0 +1,139 @@
+name: Check Steve Tags
+
+on:
+  schedule:
+    # Daily at 14:00 UTC
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  id-token: write
+
+concurrency:
+  group: check-steve-tags
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  S3_BUCKET: ${{ secrets.STEVE_TAGS_S3_BUCKET }}
+  # Cache objects are stored at steve/<minor>.txt, matching the IAM permissions.
+  S3_KEY_PREFIX: "steve/"
+  # Steve minors in Rancher releases: 0.8 is v2.14, 0.9 is v2.15, 0.10 is main.
+  # 0.8 is left out because the suite covers sorting and indexing behavior
+  # that Steve 0.8 does not have. Add it here to track v2.14 anyway.
+  SUPPORTED_MINORS: "0.9 0.10"
+
+jobs:
+  check-steve-tags:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout steve-tests
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Validate AWS configuration
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+          for setting in AWS_ROLE_ARN AWS_REGION S3_BUCKET; do
+            if [[ -z "${!setting}" ]]; then
+              echo "::error::Configure AWS_ROLE_ARN, AWS_REGION, and STEVE_TAGS_S3_BUCKET repository secrets before running tag discovery."
+              exit 1
+            fi
+          done
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Discover latest supported Steve tags
+        id: tags
+        run: |
+          set -euo pipefail
+
+          # SUPPORTED_MINORS is intentionally split into one argument per minor.
+          # shellcheck disable=SC2086
+          versions="$(git ls-remote --tags --refs \
+              https://github.com/rancher/steve.git 'refs/tags/v*' |
+            go run ./pipeline/steve/latesttags $SUPPORTED_MINORS)"
+
+          {
+            echo "versions<<EOF"
+            echo "$versions"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Latest supported Steve tags:"
+          sed 's/=/: /; s/^/  /' <<< "$versions"
+
+      - name: Compare S3 cache and dispatch e2e tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSIONS: ${{ steps.tags.outputs.versions }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          while IFS='=' read -r minor latest_tag; do
+            [[ -n "$minor" && -n "$latest_tag" ]] || continue
+
+            key="${S3_KEY_PREFIX}${minor}.txt"
+            cached_tag=""
+
+            if aws s3api head-object \
+                --bucket "$S3_BUCKET" \
+                --key "$key" \
+                >/dev/null 2>/tmp/s3-error; then
+
+              aws s3 cp "s3://${S3_BUCKET}/${key}" \
+                /tmp/cached-tag.txt --only-show-errors
+
+              cached_tag="$(tr -d '\r\n' < /tmp/cached-tag.txt)"
+
+            elif grep -Eqi \
+                '404|Not Found|NoSuchKey' /tmp/s3-error; then
+              echo "No cache for ${minor}; initializing it."
+            else
+              cat /tmp/s3-error
+              echo "::error::Failed to check S3 object ${key}"
+              exit 1
+            fi
+
+            echo "Steve ${minor}:"
+            echo "  Cached: ${cached_tag:-<none>}"
+            echo "  Latest: ${latest_tag}"
+
+            if [[ "$cached_tag" == "$latest_tag" ]]; then
+              echo "No change; skipping ${latest_tag}."
+              continue
+            fi
+
+            echo "New Steve version detected: ${latest_tag}"
+
+            gh workflow run steve-tests-e2e.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref "${DEFAULT_BRANCH:-main}" \
+              --field "steve_version=${latest_tag}"
+
+            printf '%s\n' "$latest_tag" > /tmp/cached-tag.txt
+
+            aws s3 cp /tmp/cached-tag.txt \
+              "s3://${S3_BUCKET}/${key}" \
+              --content-type text/plain \
+              --only-show-errors
+
+            echo "Updated S3 cache: ${key} = ${latest_tag}"
+
+          done <<< "$VERSIONS"

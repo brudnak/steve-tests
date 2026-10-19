@@ -515,3 +515,11 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/go,macos,windows,linux,goland,goland+all,vim,emacs,notepadpp,visualstudiocode,sublimetext,jetbrains,terraform,terragrunt
+
+# Local e2e work directory (scripts/e2e.sh)
+/.e2e/
+
+# Test results and the Qase reporter binary
+/results.json
+/results.xml
+/reporter

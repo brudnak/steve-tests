@@ -1,0 +1,50 @@
+name: Upload Steve Qase Schemas
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upload-steve-qase-schemas
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -buildvcs=false
+
+    steps:
+      - name: Checkout steve-tests
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Validate Qase configuration
+        env:
+          QASE_AUTOMATION_TOKEN: ${{ secrets.QASE_AUTOMATION_TOKEN }}
+          QASE_PROJECT_ID: ${{ secrets.QASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          for setting in QASE_AUTOMATION_TOKEN QASE_PROJECT_ID; do
+            if [[ -z "${!setting}" ]]; then
+              echo "::error::Set the ${setting} repository secret before uploading schemas."
+              exit 1
+            fi
+          done
+
+      - name: Verify schemas match the test suite
+        run: go test -count=1 ./schemas ./extensions/qase/...
+
+      - name: Upload Steve suites and cases
+        env:
+          QASE_AUTOMATION_TOKEN: ${{ secrets.QASE_AUTOMATION_TOKEN }}
+          QASE_PROJECT_ID: ${{ secrets.QASE_PROJECT_ID }}
+        run: go run ./pipeline/qase/schemaupload --schema-prefix steve
