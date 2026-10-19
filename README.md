@@ -22,6 +22,8 @@ go test -count=1 -p=4 -parallel=4 -timeout=20m -v ./...
 
 Omit the permission flags for read-only checks. Tests clean up their resources. Set `STEVE_TOKEN` if authentication is required; use `STEVE_CA_FILE` for a private CA or `STEVE_INSECURE_SKIP_VERIFY=true` for a local self-signed endpoint. `STEVE_URL` can override the configured endpoint.
 
+Set `STEVE_VERSION` to the target release for local tests; GitHub Actions already supplies it. The ReplicaSet associated-data test skips known releases older than `v0.10.1`. Leave it unset for unknown or custom targets so assertions stay active.
+
 In GoLand, select [**All Steve tests**](.run/All%20Steve%20tests.run.xml) and click Play. It uses `~/steve-config.yaml`, enables all test permissions, and shows individual results. The [TestAll](all_test.go) wrapper also runs the suite but appears as one test.
 
 ## End-to-end runs
