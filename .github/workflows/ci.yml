@@ -1,0 +1,53 @@
+name: Steve Tests CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: steve-tests-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -buildvcs=false
+
+    steps:
+      - name: Checkout steve-tests
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Verify Go dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Run unit tests and validate Qase schemas
+        # Integration tests skip when no Steve target is configured.
+        run: go test -count=1 -timeout=5m ./...
+
+      - name: Install workflow and shell linters
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends shellcheck
+
+      - name: Validate GitHub Actions workflows
+        run: |
+          shopt -s nullglob
+          workflow_files=(.github/workflows/*.yml .github/workflows/*.yaml)
+          actionlint -color "${workflow_files[@]}"
+
+      - name: Validate shell scripts
+        run: shellcheck scripts/*.sh

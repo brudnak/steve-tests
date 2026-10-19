@@ -1,0 +1,62 @@
+---
+name: Run Test Suite
+description: "Runs steve-tests against the e2e Steve and optionally reports results to Qase"
+inputs:
+  packages:
+    description: "Go packages to test"
+    required: false
+    default: "./..."
+  reporting:
+    description: "Report results to Qase (true or false)"
+    required: true
+  test-suite:
+    description: "Optional go test -run regex; empty runs every test"
+    required: false
+    default: ""
+  timeout:
+    description: "go test timeout"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Run test suite
+      shell: bash
+      continue-on-error: true
+      env:
+        E2E_PACKAGES: ${{ inputs.packages }}
+        E2E_RUN: ${{ inputs.test-suite }}
+        E2E_TEST_TIMEOUT: ${{ inputs.timeout }}
+      run: |
+        set +e
+        ./scripts/e2e.sh test
+        test_exit_code=$?
+        echo "test_exit_code=$test_exit_code" >> "$GITHUB_ENV"
+
+    - name: Report results to Qase
+      if: inputs.reporting == 'true'
+      shell: bash
+      continue-on-error: true
+      run: |
+        set +e
+        ./scripts/build-qase-reporter-v2.sh && ./reporter
+        qase_report_exit_code=$?
+        echo "qase_report_exit_code=$qase_report_exit_code" >> "$GITHUB_ENV"
+
+    - name: Show failed tests
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+        TEST_SUITE: ${{ inputs.test-suite }}
+      run: |
+        if [ "${test_exit_code:-1}" -ne 0 ]; then
+          echo "Failed test suite: ${TEST_SUITE:-$PACKAGES} (exit code ${test_exit_code:-unknown})"
+          if [ -f results.json ]; then
+            jq -r 'select(.Action=="fail" and .Test != null) | "- " + .Test' results.json
+          fi
+          exit 1
+        fi
+        if [ "${qase_report_exit_code:-0}" -ne 0 ]; then
+          echo "::error::Tests passed, but reporting to Qase failed (exit code ${qase_report_exit_code})."
+          exit 1
+        fi

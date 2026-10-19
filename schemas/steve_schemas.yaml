@@ -1,0 +1,272 @@
+# Qase case definitions for steve-tests.
+#
+# Each top-level Go test under tests/ is one Qase case; subtest results are
+# summarized in the case's result comment. schemas_test.go fails when a test is
+# added, renamed, or removed without updating this file.
+#
+# Upload with:
+#   QASE_AUTOMATION_TOKEN=... go run ./pipeline/qase/schemaupload
+- projects:
+    - RM
+  suite: Go Automation/Steve/configmaps
+  cases:
+    - title: TestConfigMapCRUDLifecycle
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapSummaryOnlyAndNamespaced
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsCollectionScenarios
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsFilterOperatorScenarios
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsFutureRevisionIsRejected
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsNamespaceScoping
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsNumericFieldSortAndCompare
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsPaginationWalk
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsProjectsOrNamespacesParam
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsRepeatedFilteredPages
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestConfigMapsSortBooleanField
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestNamespacedPatchPreservesPatchType
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/contracts
+  cases:
+    - title: TestCollectionsWithoutGETMethodDoNotHang
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestReadOnlyAPIContractValidators
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestReadOnlyAPISurfacesReturnJSON
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestSteveCollectionSurfacesRemainResponsive
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestValidateJSONContentType
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/counts
+  cases:
+    - title: TestCountsReflectCreatedResource
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestCountsResourceReportsCoreTypes
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/crds
+  cases:
+    - title: TestCRDPrinterColumnRefreshAndCaseInsensitiveSort
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestIsSQLCacheWarmup
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestMetadataFieldsByName
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestPrinterFieldHelpers
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestSelectDynamicSchema
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestSetPrinterColumns
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestVerifyDynamicSchemaColumns
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/deployments
+  cases:
+    - title: TestDeploymentCRUDLifecycle
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestDeploymentsCollectionScenarios
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestReplicaSetIncludesAssociatedPods
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/indexedfields
+  cases:
+    - title: TestSQLIndexedFields
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/ingresses
+  cases:
+    - title: TestHostlessIngressRemainsVisible
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestIngressArrayFieldExactFilterAndIndexedSort
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/jobs
+  cases:
+    - title: TestJobSyntheticStateIndexRefreshes
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/pods
+  cases:
+    - title: TestPodCRUDLifecycle
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestPodLastTerminationTime
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestPodsArrayFilterByExactContainerImage
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestPodsRestartSortScenarios
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/schemas
+  cases:
+    - title: TestSchemaByIDIsFetchable
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestSchemasContainCoreResources
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestUnknownSchemaReturnsNotFound
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+- projects:
+    - RM
+  suite: Go Automation/Steve/secrets
+  cases:
+    - title: TestSecretCRUDLifecycle
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestSecretCollectionReturnsBeforeDeadline
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestSecretTypeFilterAndSort
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
+    - title: TestSecretsCollectionScenarios
+      priority: 4
+      type: 8
+      is_flaky: 0
+      automation: 2
