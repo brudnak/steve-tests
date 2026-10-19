@@ -1,29 +1,33 @@
 package deployments
 
 import (
-	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/rancher/steve-tests/actions"
 	"github.com/rancher/steve-tests/pkg/client"
 	"github.com/rancher/steve-tests/pkg/query"
+	"golang.org/x/mod/semver"
 )
 
-// A Deployment provides the positive associated-data capability probe before
-// checking ReplicaSet-to-Pod associations.
+// ReplicaSet associated data was introduced in Steve v0.10.1.
 func TestReplicaSetIncludesAssociatedPods(t *testing.T) {
 	setup := actions.RequireSQLMode(t)
+	version := strings.TrimSpace(os.Getenv("STEVE_VERSION"))
+	// Skip only full release tags. Unknown targets and v0.10.1 prereleases still run.
+	if semver.IsValid(version) &&
+		strings.HasPrefix(version, semver.MajorMinor(version)+".") &&
+		semver.Compare(version, "v0.10.1-0") < 0 {
+		t.Skipf("ReplicaSet associated data requires Steve v0.10.1 or newer; target is %s", version)
+	}
 	actions.RequireWorkloads(t)
 	cl := setup.Client
-	if _, ok := cl.Schema("apps.deployment"); !ok {
-		t.Skip("Deployment schema is not exposed by this target")
-	}
 	if _, ok := cl.Schema("apps.replicaset"); !ok {
 		t.Skip("ReplicaSet schema is not exposed by this target")
 	}
@@ -33,30 +37,6 @@ func TestReplicaSetIncludesAssociatedPods(t *testing.T) {
 
 	ns := actions.CreateTestNamespace(t, cl)
 	pods := cl.Resource("pod").Namespace(ns)
-
-	deploymentName := "associated-capability"
-	deploymentBody := newDeploymentBody(ns, deploymentName, map[string]string{
-		actions.CaseLabel: actions.UniqueName(t, "associated-capability"),
-	})
-	deploymentBody["spec"].(map[string]any)["replicas"] = int64(1)
-	deployments := cl.Resource("apps.deployment").Namespace(ns)
-	actions.CreateAndWait(t, deployments, deploymentName, deploymentBody)
-	deploymentPod := waitForSinglePod(t, pods, "app", deploymentName)
-
-	deploymentValues := associatedDataValues(t, query.Equal("metadata.name", deploymentName))
-	seen, names, err := waitForAssociatedPods(deployments, deploymentValues, deploymentName, []string{deploymentPod})
-	if isAssociatedDataUnsupported(err) {
-		t.Skipf("target rejected includeAssociatedData: %v", err)
-	}
-	if err != nil {
-		t.Fatalf("probe Deployment associated-data support: %v", err)
-	}
-	if !seen {
-		t.Skip("target does not expose SQL associated data for a known-supported Deployment")
-	}
-	if !reflect.DeepEqual(names, []string{deploymentPod}) {
-		t.Fatalf("Deployment associated Pod names = %v, want exactly [%s]", names, deploymentPod)
-	}
 
 	replicaSetName := "associated-replicaset"
 	replicaSetCase := actions.UniqueName(t, "associated-replicaset")
@@ -88,7 +68,7 @@ func TestReplicaSetIncludesAssociatedPods(t *testing.T) {
 					t.Fatalf("list ReplicaSet with associated data: %v", err)
 				}
 				if !seen {
-					t.Fatal("ReplicaSet omitted associatedData after the Deployment capability probe succeeded")
+					t.Fatal("ReplicaSet omitted associatedData with includeAssociatedData=true")
 				}
 				if !reflect.DeepEqual(names, []string{replicaSetPod}) {
 					t.Fatalf("associated Pods = %v, want [%s]", names, replicaSetPod)
@@ -182,19 +162,6 @@ func waitForSinglePod(t *testing.T, pods *client.ResourceClient, label string, v
 	}
 }
 
-func associatedDataValues(t *testing.T, filter string) url.Values {
-	t.Helper()
-	values, err := (query.ListOptions{
-		Filters:               []string{filter},
-		Sort:                  []string{"metadata.name"},
-		IncludeAssociatedData: query.Bool(true),
-	}).Values()
-	if err != nil {
-		t.Fatalf("encode associated-data query: %v", err)
-	}
-	return values
-}
-
 func waitForAssociatedPods(resources *client.ResourceClient, values url.Values, parent string, want []string) (bool, []string, error) {
 	deadline := time.Now().Add(resources.WaitTimeout())
 	seen := false
@@ -276,9 +243,4 @@ func nestedStringValue(resource map[string]any, keys ...string) string {
 	}
 	value, _ := current.(string)
 	return value
-}
-
-func isAssociatedDataUnsupported(err error) bool {
-	var statusErr *client.StatusError
-	return errors.As(err, &statusErr) && statusErr.StatusCode == http.StatusUnprocessableEntity
 }

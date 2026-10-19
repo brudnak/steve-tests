@@ -300,7 +300,9 @@ cmd_down() {
       steve_running || break
       sleep 0.5
     done
-    steve_running && kill -9 "$(cat "$STEVE_PID_FILE")" 2>/dev/null || true
+    if steve_running; then
+      kill -9 "$(cat "$STEVE_PID_FILE")" 2>/dev/null || true
+    fi
   fi
   rm -f "$STEVE_PID_FILE"
 
